@@ -1,0 +1,9 @@
+# Runtime dependencies (Python 3.12+). Install: pip install -r requirements.txt
+Django>=5.1,<6.0
+django-htmx>=1.21,<2.0
+django-environ>=0.11,<1.0
+phonenumbers>=8.13,<9.0
+python-magic>=0.4.27,<0.5
+Pillow>=10.4,<12.0
+psycopg[binary]>=3.2,<4.0
+whitenoise>=6.7,<7.0
