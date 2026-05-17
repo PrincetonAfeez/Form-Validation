@@ -1,16 +1,17 @@
 # Form Validation App
 
 A portfolio-style Django 5 showcase for layered form validation with HTMX partials,
-custom form fields, validator introspection, formsets, a session-backed wizard, and
-focused tests.
+custom form fields, validator introspection, formsets, a session-backed wizard (HTMX
+step navigation), and focused tests (unit + Playwright E2E in CI).
 
 ## Stack
 
 - Python 3.12 target, Django 5, SQLite for development
 - PostgreSQL 16-ready settings through `DATABASE_URL`
 - HTMX, optional `django-htmx`, compiled Tailwind CSS (`static/css/forms_lab.css`), Alpine.js
-- `phonenumbers`, `python-magic`, Pillow
+- `phonenumbers`, `python-magic`, Pillow; **WhiteNoise** for production static files
 - Test/lint tools in `requirements-dev.txt` (pytest, pytest-cov, ruff, black, hypothesis, Playwright)
+- Tooling config in `pyproject.toml` (pytest, coverage, ruff, black)
 
 The code includes small fallbacks for optional local dependencies so the app remains
 easy to run in constrained demo environments.
@@ -18,7 +19,7 @@ easy to run in constrained demo environments.
 ```bash
 pip install -r requirements.txt          # runtime
 pip install -r requirements-dev.txt      # tests, lint, e2e
-npm install && npm run build:css         # after changing templates / Tailwind classes
+npm install && npm run build:css         # after Tailwind classes change in templates, apps/**/*.py, or static/js
 ```
 
 ## Run
@@ -49,19 +50,49 @@ python manage.py migrate
 
 ## Field Partial Contract
 
-`templates/forms/_field.html` is the only place field markup belongs. Every full
-form render and every HTMX single-field response uses the same contract:
+`templates/forms/_field.html` is the only place field **markup** belongs, but you must
+**not** render it with a bare `{% include %}` and `{field, state, message}` alone.
+That pattern predates `bound_field_context()` and will produce broken HTML (missing
+wrappers, wrong ARIA targets, collapsed radio/checkbox groups).
 
-- `field`: a Django `BoundField`
-- `state`: `neutral`, `valid`, or `invalid`
-- `message`: optional helper or error text
+**Always render fields through one of these entry points:**
 
-Adding field HTML elsewhere should be treated as a bug.
+1. **`{% render_bound_field form field %}`** — inclusion tag in `form_extras.py` (full
+   pages, formset rows, wizard steps).
+2. **`bound_field_context(form, field, state=…, message=…)`** — used by views that
+   return a single field over HTMX (e.g. `field_validate`, signup check URLs).
+
+Both build the full context dict below and pass it to `_field.html`.
+
+| Context key | Role |
+|-------------|------|
+| `field` | Django `BoundField` |
+| `state` | `neutral`, `valid`, or `invalid` |
+| `message` | Optional helper or server validation text |
+| `field_html` | Widget HTML with `aria-describedby` / `aria-invalid` when appropriate (single controls only) |
+| `wrapper_id` | Outer element id (`{field_id}-wrap`) — HTMX swap target for blur validation |
+| `message_id` | Live region id (`{field_id}-message`) |
+| `use_fieldset` | `True` for `RadioSelect` / `CheckboxSelectMultiple` |
+
+**Grouped choices (`use_fieldset`):** the partial renders `<fieldset id="{{ wrapper_id }}">`
+with `<legend>{{ field.label }}</legend>`, options inside the fieldset, and
+`aria-describedby` / `aria-invalid` on the **fieldset** (not duplicated on each radio).
+**Single controls:** a `<label for="…">` plus a `<div id="{{ wrapper_id }}">` wrapper;
+ARIA attributes are on the control via `field_html`.
+
+For grouped widgets, `id_for_label` is empty; ids are derived from `auto_id` so
+formset prefixes stay unique (`id_addresses-0-satisfaction-wrap`, etc.).
+
+Adding field HTML elsewhere, or including `_field.html` without the full context, is a
+bug. Unit tests assert unique `*-wrap` / `*-message` ids on every demo page and wizard
+step.
 
 ## Architecture
 
-A fuller diagram (components, HTMX paths, validation layers) lives in
-[docs/architecture.md](docs/architecture.md).
+A fuller diagram (components, HTMX paths, validation layers, CI matrix) lives in
+[docs/architecture.md](docs/architecture.md). Design decisions are recorded in
+[docs/adr/](docs/adr/) (0001–0007, including
+[blur vs full-form validation](docs/adr/0007-single-field-vs-full-form-validation.md)).
 
 ```mermaid
 flowchart LR
@@ -79,10 +110,10 @@ flowchart LR
 - Signup: username/email HTMX checks, password strength, confirmation, PhoneField
 - Address: country-dependent state and postal validation
 - Payment: Luhn, brand detection, CVV and expiry cross-field rules
-- Wizard: session-backed three-step validation and final revalidation
+- Wizard: session-backed three steps; Next/Finish and **Back** swap `#wizard-shell` via HTMX; final revalidation of all steps
 - File upload: magic bytes, file size, image dimensions, multiple files
-- Dynamic formset: previous-address rows and duplicate detection
-- Survey: mixed widgets and conditional passport validation
+- Dynamic formset: HTMX **add-row**; **client-side remove** with prefix reindex (min 1 / max 5 rows); duplicate-address check on submit
+- Survey: mixed widgets, `<fieldset>`/`<legend>` for radio/checkbox groups, conditional passport field
 
 ## Design Notes
 
@@ -100,9 +131,9 @@ typical production choices:
 | **Signup** | Regex username, static reserved-name blocklist (not live availability), domain *shape* check (not DNS), honeypot + time-trap (`started_at` required on full submit) | Auth provider (e.g. Django auth / OAuth); real username availability API; email verification via SendGrid/Postmark + double opt-in; DNS MX lookup or vendor API (Kickbox, ZeroBounce); [hCaptcha](https://www.hcaptcha.com/) / reCAPTCHA / Turnstile; rate limiting (Redis, CDN/WAF) |
 | **Address** | Country-specific regex postal codes | [Google Places](https://developers.google.com/maps/documentation/places/web-service), [Loqate](https://www.loqate.com/), [Smarty](https://www.smarty.com/) for verified addresses |
 | **Payment** | Luhn + brand heuristics; masked last4 in memory only | [Stripe Elements](https://stripe.com/payments/elements), Braintree, Adyen — card data never touches your server (PCI SAQ A) |
-| **Wizard** | Session JSON for step data | Signed/encrypted session, or persisted draft (`WizardSession` model) with CSRF and step tokens |
+| **Wizard** | Session JSON for step data; HTMX partial navigation (not hardened step tokens) | Signed/encrypted session, or persisted draft (`WizardSession` model) with CSRF and step tokens |
 | **File upload** | Magic-byte sniff (with fallbacks), size/dimension caps | ClamAV/async malware scan; S3/GCS with pre-signed uploads; separate image pipeline (Imgproxy, Cloudinary) |
-| **Formset** | In-memory duplicate street/city/postal check | DB uniqueness constraints, or address normalization service before compare |
+| **Formset** | In-memory duplicate check; client reindex on row remove (no server delete endpoint) | DB uniqueness constraints, or address normalization service before compare |
 | **Survey** | Conditional `clean()` for passport / “other” interest | Same server-side rules, plus client hints; store PII under retention policy if required |
 
 Optional dependency **fallbacks** (`phonenumbers`, `python-magic`) keep the
@@ -111,15 +142,22 @@ treat fallbacks as dev-only.
 
 ## Test and Lint
 
-**Unit** (pytest-django, ~97% coverage on `forms_lab`, `e2e` excluded):
+Pytest settings and coverage thresholds live in **`pyproject.toml`** (`[tool.pytest.ini_options]`,
+`[tool.coverage.*]`). Default `pytest` / `make test` excludes the `e2e` marker.
+
+**Unit** (~177 tests, ~97% coverage on `forms_lab`, `e2e` excluded):
 
 ```bash
 make test          # or: pytest
-make lint
+make lint          # ruff
 make coverage
 ```
 
-**E2E** (Playwright — full submit per demo, wizard flow, HTMX blur, page loads):
+Includes HTML id-uniqueness checks for field partials on all demos and wizard steps.
+
+**E2E** (17 Playwright tests — full submit per demo; wizard Next/Finish and **Back**
+(HTMX); formset add-row, **middle-row remove with client reindex**, then submit; signup
+HTMX blur; page loads; address country swap):
 
 ```bash
 pip install -r requirements-dev.txt
@@ -136,8 +174,7 @@ make test-ci
 On Windows without `make`, run the same commands from the Makefile targets.
 
 GitHub Actions (`.github/workflows/ci.yml`) runs on Postgres: `npm ci` + `build:css`,
-`ruff`, unit `pytest`, then `playwright install` + `pytest -m e2e --no-cov`. See
-[ADR 0007](docs/adr/0007-single-field-vs-full-form-validation.md) for blur vs full submit.
+`ruff`, unit `pytest`, then `playwright install --with-deps chromium` + `pytest -m e2e --no-cov`.
 
 ### HTMX & UI (implemented)
 
@@ -146,11 +183,14 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on Postgres: `npm ci` + `build:
 - **Deep links:** sidebar uses `hx-push-url` + `hx-select="#lab-content"`
 - **Upload progress:** `<progress id="upload-progress">` driven by `htmx:xhr:progress`
 - **Payment CVV:** brand detect sets `maxLength` on `#id_cvv` via `cardBrandDetected` event
-- **Accessibility:** `aria-describedby` / `aria-invalid` on inputs; **Esc** clears visible inline error text (demo UX)
+- **Wizard:** Next/Finish POST into `#wizard-shell`; **Back** uses `hx-get` + `hx-select="#wizard-shell"` (session answers preserved, no full-page reload)
+- **Formset:** HTMX **add-row** (`POST /forms/formset/add-row/`, capped at `max_num`); **remove** is client-only (`data-formset-remove`) — row deleted in the DOM, prefixes reindexed (`addresses-N-` → contiguous `0…n-1`), `TOTAL_FORMS` synced, Add/Remove buttons respect min/max
+- **Accessibility:** radio/checkbox groups use `<fieldset>` / `<legend>` via `_field.html`; `aria-describedby` and `aria-invalid` sit on the **fieldset** for groups and on the **input** (through `field_html`) for single controls — not a blanket “on inputs” rule; **Esc** clears visible inline error text (demo UX)
 - **Signup blur:** wired to `/forms/signup/check-username/` and `check-email/` (reserved-name / email rules demo — not a live availability API)
 
 ### Styling
 
 Tailwind is **compiled in-repo** (`npm run build:css` → `static/css/forms_lab.css`).
-Commit the built CSS when template classes change. **CI** uses Node 20 (`npm ci` +
-`build:css`) before tests so static assets match production-like styling.
+`tailwind.config.js` scans `templates/`, `apps/**/*.py` (e.g. class strings in
+`mixins.py`), and `static/js/` — rebuild and commit CSS when classes change in any of
+those paths. **CI** uses Node 20 (`npm ci` + `build:css`) before tests.
