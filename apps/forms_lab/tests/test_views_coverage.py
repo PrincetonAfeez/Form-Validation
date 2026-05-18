@@ -1,3 +1,5 @@
+""" Test views coverage. """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -251,13 +253,11 @@ def test_formset_add_row_invalid_total_defaults_to_zero(client):
 def test_file_scan_invalid_shows_failure(client):
     response = client.post(
         "/forms/file-upload/scan/",
-        {},
+        {"_field": "resume"},
         HTTP_HX_REQUEST="true",
     )
-    assert (
-        b"Validation failed" in response.content
-        or b"required" in response.content.lower()
-    )
+    assert b"Validation failed" in response.content
+    assert b"resume" in response.content.lower()
 
 
 @pytest.mark.parametrize(
