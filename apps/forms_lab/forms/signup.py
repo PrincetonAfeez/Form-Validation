@@ -1,3 +1,5 @@
+""" Signup form demo with username validation, email shape, password strength, and phone normalization. """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
