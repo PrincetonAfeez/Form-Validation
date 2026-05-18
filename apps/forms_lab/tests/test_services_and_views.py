@@ -1,3 +1,5 @@
+""" Test services and views. """
+
 from __future__ import annotations
 
 import pytest
@@ -198,9 +200,10 @@ def test_file_scan_and_formset_endpoints_render(client):
     scan = client.post(
         "/forms/file-upload/scan/",
         {
+            "_field": "resume",
             "resume": SimpleUploadedFile(
                 "resume.pdf", b"%PDF-1.4\nbody", content_type="application/pdf"
-            )
+            ),
         },
         HTTP_HX_REQUEST="true",
     )
