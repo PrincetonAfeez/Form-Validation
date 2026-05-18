@@ -15,6 +15,8 @@ build/
 *.manifest
 *.spec
 
+.claude/
+
 # Django
 db.sqlite3
 *.sqlite3
@@ -59,3 +61,5 @@ Thumbs.db
 .idea/
 .vscode/
 !.vscode/extensions.json
+
+Form Validation.txt
