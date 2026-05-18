@@ -1,3 +1,5 @@
+""" E2E test helpers for the form validation showcase. """
+
 from __future__ import annotations
 
 import uuid
