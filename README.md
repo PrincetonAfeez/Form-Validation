@@ -166,13 +166,14 @@ python -m playwright install chromium   # once per machine
 make test-e2e      # or: pytest -m e2e --no-cov
 ```
 
-**Full CI parity locally** (migrate, unit, E2E; requires Node for `npm run build`):
+**Full CI parity locally** (Postgres via `DATABASE_URL`, `config.settings.ci`; Node for `npm run build`):
 
 ```bash
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/form_validation
 make test-ci
 ```
 
-On Windows without `make`, run the same commands from the Makefile targets.
+On Windows without `make`, set `DATABASE_URL` and `DJANGO_SETTINGS_MODULE=config.settings.ci`, then run the same commands as the `test-ci` target in the Makefile.
 
 GitHub Actions (`.github/workflows/ci.yml`) on Postgres: `npm ci` + `npm run build`,
 `ruff`, unit `pytest`, then `playwright install --with-deps chromium` + `pytest -m e2e --no-cov`.
