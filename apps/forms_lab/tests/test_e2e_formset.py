@@ -1,3 +1,5 @@
+""" E2E tests for the formset demo. """
+
 from __future__ import annotations
 
 import pytest
