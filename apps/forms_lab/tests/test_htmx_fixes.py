@@ -1,3 +1,5 @@
+""" Test HTMX fixes. """
+
 from __future__ import annotations
 
 import pytest
@@ -31,6 +33,22 @@ def test_address_country_change_works_twice(client):
     assert second.status_code == 200
     assert b"England" in second.content
     assert b"id=\"dependent-address-fields\"" not in second.content
+
+
+@pytest.mark.django_db
+def test_survey_passport_number_rendered_only_inside_passport_field(client):
+    unchecked = client.get("/forms/survey/")
+    html = unchecked.content.decode()
+    assert 'id="id_passport_number-wrap"' not in html
+    assert 'id="passport-field"' in html
+
+    checked = client.post(
+        "/forms/survey/toggle-passport/",
+        {"has_passport": "on"},
+        HTTP_HX_REQUEST="true",
+    )
+    partial = checked.content.decode()
+    assert partial.count('id="id_passport_number-wrap"') == 1
 
 
 @pytest.mark.django_db
