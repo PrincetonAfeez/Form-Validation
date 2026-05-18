@@ -1,3 +1,5 @@
+""" Multi-step wizard demo with session-backed state, per-step validation, and back navigation. """
+
 from __future__ import annotations
 
 from django import forms
