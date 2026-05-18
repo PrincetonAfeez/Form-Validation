@@ -1,3 +1,5 @@
+""" Address postal code validation. """
+
 import re
 
 from django.core.exceptions import ValidationError
