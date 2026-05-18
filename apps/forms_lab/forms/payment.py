@@ -1,3 +1,5 @@
+""" Payment form demo with Luhn, brand detection, and CVV validation. """
+
 from __future__ import annotations
 
 from datetime import date
@@ -49,11 +51,10 @@ class PaymentForm(HTMXFormMixin, TailwindFormMixin, forms.Form):
 
     def clean_card_number(self):
         value = self.cleaned_data["card_number"]
-        validate_luhn(value)
         self._raw_card_digits = normalize_card_number(value)
         self.detected_brand = detect_card_brand(value)
-        last4 = self._raw_card_digits[-4:]
-        return f"************{last4}"
+        validate_luhn(value)
+        return f"************{self._raw_card_digits[-4:]}"
 
     def clean(self):
         cleaned = super().clean()
@@ -65,7 +66,7 @@ class PaymentForm(HTMXFormMixin, TailwindFormMixin, forms.Form):
                 validate_not_expired(int(month), int(year))
             except forms.ValidationError as exc:
                 self.add_error("expiry_month", exc)
-        if cvv:
+        if cvv and "card_number" not in self.errors:
             try:
                 validate_cvv_for_brand(cvv, self.detected_brand)
             except forms.ValidationError as exc:
