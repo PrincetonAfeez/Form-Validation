@@ -118,7 +118,8 @@ Submitted field values are **not** stored. Only `ValidationLog` rows (`form_name
 **Workflow:** `.github/workflows/ci.yml` on Postgres (`config.settings.ci`, `DATABASE_URL`).
 
 Local quick runs use `config.settings.dev` (SQLite) via `pyproject.toml`
-(`[tool.pytest.ini_options]`). Parity locally: `make test-ci` (migrate, unit, E2E).
+(`[tool.pytest.ini_options]`). Parity locally: `make test-ci` with `DATABASE_URL` set
+and `DJANGO_SETTINGS_MODULE=config.settings.ci` on migrate/pytest (see Makefile).
 
 Unit tests include HTML id-uniqueness checks for `*-wrap` / `*-message` on every demo
 and wizard step.
