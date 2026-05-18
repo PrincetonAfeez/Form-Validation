@@ -1,3 +1,5 @@
+""" Models for the forms lab app. """
+
 from django.db import models
 
 
