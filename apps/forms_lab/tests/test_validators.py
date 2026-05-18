@@ -1,3 +1,5 @@
+""" Test validators. """
+
 from __future__ import annotations
 
 from datetime import date
@@ -119,7 +121,9 @@ def test_time_trap_validator():
         validate_time_trap(
             {"started_at": datetime.now(timezone.utc).isoformat()}, min_seconds=3
         )
-    validate_time_trap({"started_at": "not-a-date"})
+    with pytest.raises(ValidationError) as malformed:
+        validate_time_trap({"started_at": "not-a-date"})
+    assert malformed.value.code == "invalid_trap"
     with pytest.raises(ValidationError):
         validate_time_trap({})
 
