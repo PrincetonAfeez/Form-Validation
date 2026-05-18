@@ -1,3 +1,5 @@
+""" Survey form demo with mixed widget types, other-option pattern, conditional fields, and phone normalization. """
+
 from __future__ import annotations
 
 from django import forms
