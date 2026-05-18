@@ -36,8 +36,10 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: pip install -r requirements-dev.txt
       - run: npm ci
-      - run: npm run build:css
+      - run: npm run build
       - run: test -f static/css/forms_lab.css
+      - run: test -f static/js/vendor/htmx.min.js
+      - run: test -f static/js/vendor/alpine.min.js
       - run: python manage.py migrate --noinput
       - run: ruff check apps config
       - run: pytest
