@@ -1,3 +1,5 @@
+""" Services for the forms lab app. """
+
 from __future__ import annotations
 
 import logging
@@ -82,6 +84,41 @@ def validate_and_clean(slug: str, payload, files=None) -> ValidationResult:
         errors=collect_errors(artifact),
         form=artifact,
         message="Validation passed." if is_valid else "Validation failed.",
+    )
+
+
+def validate_file_upload_field(field_name: str, payload, files=None) -> ValidationResult:
+    """Validate one file-upload field for HTMX scan (not the whole form)."""
+    from .forms.file_upload import FileUploadForm
+
+    if field_name not in FileUploadForm.base_fields:
+        raise ValueError(f"Unknown file field {field_name!r}.")
+    form = build_artifact("file-upload", payload, files)
+    form.cleaned_data = {}
+    _, error_message = clean_form_field(form, field_name)
+    if error_message:
+        return ValidationResult(
+            form_name="file-upload",
+            is_valid=False,
+            cleaned_data={},
+            errors={field_name: [error_message]},
+            form=form,
+            message="Validation failed.",
+        )
+    value = form.cleaned_data.get(field_name)
+    if isinstance(value, list):
+        cleaned = {field_name: [serialize_value(item) for item in value]}
+    elif value:
+        cleaned = {field_name: serialize_value(value)}
+    else:
+        cleaned = {}
+    return ValidationResult(
+        form_name="file-upload",
+        is_valid=True,
+        cleaned_data=cleaned,
+        errors={},
+        form=form,
+        message="Validation passed.",
     )
 
 
