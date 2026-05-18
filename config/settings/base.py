@@ -1,3 +1,5 @@
+""" Base settings for the forms lab app. """
+
 from __future__ import annotations
 
 import importlib.util
