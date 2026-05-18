@@ -1,3 +1,5 @@
+""" Views for the forms lab app. """
+
 from __future__ import annotations
 
 import json
@@ -10,6 +12,7 @@ from django.views.decorators.http import require_POST
 
 from .forms import DEMOS, WIZARD_STEPS
 from .forms.address import AddressForm
+from .forms.file_upload import FileUploadForm
 from .forms.formset import PreviousAddressForm, PreviousAddressFormSet
 from .forms.survey import SurveyForm
 from .models import ValidationLog
@@ -18,6 +21,7 @@ from .services import (
     get_demo,
     serialize_cleaned_data,
     validate_and_clean,
+    validate_file_upload_field,
     validate_single_field,
 )
 from .templatetags.form_extras import bound_field_context
@@ -187,7 +191,15 @@ def wizard_step(request, n: int):
 
 @require_POST
 def file_upload_scan(request):
-    result = validate_and_clean("file-upload", request.POST, request.FILES)
+    field_name = request.POST.get("_field")
+    if not field_name or field_name not in FileUploadForm.base_fields:
+        raise Http404("Unknown file field")
+    try:
+        result = validate_file_upload_field(
+            field_name, request.POST, request.FILES
+        )
+    except ValueError as exc:
+        raise Http404("Unknown file field") from exc
     return render(request, "forms_lab/partials/_file_progress.html", {"result": result})
 
 
