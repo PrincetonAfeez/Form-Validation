@@ -1,4 +1,4 @@
-"""ASGI config for the validation showcase."""
+""" ASGI config for the validation showcase """
 
 import os
 
