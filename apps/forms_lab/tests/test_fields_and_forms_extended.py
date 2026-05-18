@@ -1,3 +1,5 @@
+""" Test fields and forms extended. """
+
 from __future__ import annotations
 
 from datetime import date
@@ -108,6 +110,23 @@ def test_payment_form_rejects_bad_luhn():
     )
     assert not form.is_valid()
     assert "card_number" in form.errors
+
+
+def test_payment_invalid_luhn_amex_pattern_does_not_add_cvv_error():
+    """Amex-shaped number that fails Luhn must not trigger a misleading 3-digit CVV error."""
+    form = PaymentForm(
+        {
+            "card_number": "378282246310001",
+            "expiry_month": "12",
+            "expiry_year": str(date.today().year + 1),
+            "cvv": "123",
+            "name_on_card": "Test",
+        }
+    )
+    assert not form.is_valid()
+    assert "card_number" in form.errors
+    assert "cvv" not in form.errors
+    assert form.detected_brand == "amex"
 
 
 def test_payment_amex_valid_cvv():
