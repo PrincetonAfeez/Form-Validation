@@ -1,3 +1,5 @@
+""" Context processors for the forms lab app. """
+
 from .forms import DEMOS
 
 
