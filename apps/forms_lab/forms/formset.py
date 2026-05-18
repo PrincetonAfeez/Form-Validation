@@ -1,3 +1,5 @@
+""" Formset demo with previous address validation. """
+
 from __future__ import annotations
 
 from django import forms
@@ -35,14 +37,21 @@ class BasePreviousAddressFormSet(BaseFormSet):
     def clean(self):
         super().clean()
         seen = set()
+
         for form in self.forms:
+            if form.errors:
+                continue
             if not hasattr(form, "cleaned_data") or form.cleaned_data.get("DELETE"):
                 continue
-            key = (
-                form.cleaned_data.get("street", "").casefold(),
-                form.cleaned_data.get("city", "").casefold(),
-                form.cleaned_data.get("postal_code", "").casefold(),
-            )
+
+            street = (form.cleaned_data.get("street") or "").casefold()
+            city = (form.cleaned_data.get("city") or "").casefold()
+            postal = (form.cleaned_data.get("postal_code") or "").casefold()
+
+            if not street or not city or not postal:
+                continue
+
+            key = (street, city, postal)
             if key in seen:
                 raise forms.ValidationError(
                     "Duplicate previous addresses are not allowed.",
