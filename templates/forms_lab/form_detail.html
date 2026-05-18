@@ -135,7 +135,9 @@
             {% render_bound_field form form.city %}
           {% else %}
             {% for field in form.visible_fields %}
-              {% render_bound_field form field %}
+              {% if demo.slug == "survey" and field.name == "passport_number" %}
+              {% else %}
+                {% render_bound_field form field %}
               {% if demo.slug == "signup" and field.name == "password" %}
                 {% include "forms_lab/partials/_password_strength.html" %}
               {% endif %}
@@ -157,6 +159,7 @@
                 <div id="passport-field">
                   {% include "forms_lab/partials/_passport_field.html" with form=form show=form.has_passport.value %}
                 </div>
+              {% endif %}
               {% endif %}
             {% endfor %}
           {% endif %}
