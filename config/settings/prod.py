@@ -1,3 +1,5 @@
+""" Production settings for the forms lab app. """
+
 import os
 
 from django.core.exceptions import ImproperlyConfigured
