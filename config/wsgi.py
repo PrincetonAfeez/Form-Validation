@@ -1,4 +1,4 @@
-"""WSGI config for the validation showcase."""
+""" WSGI config for the validation showcase """
 
 import os
 
