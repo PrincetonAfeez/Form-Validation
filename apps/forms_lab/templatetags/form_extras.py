@@ -1,3 +1,5 @@
+""" Template tags for the form validation showcase. """
+
 from __future__ import annotations
 
 from django import forms, template
