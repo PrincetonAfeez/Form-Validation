@@ -1,7 +1,12 @@
-.PHONY: run test test-e2e test-ci lint format coverage migrate build-css
+.PHONY: run test test-e2e test-ci lint format coverage migrate build-css build-vendor build-assets
 
 build-css:
 	npm run build:css
+
+build-vendor:
+	npm run build:vendor
+
+build-assets: build-css build-vendor
 
 run:
 	python manage.py runserver
@@ -15,7 +20,7 @@ test:
 test-e2e:
 	pytest -m e2e --no-cov
 
-test-ci: build-css
+test-ci: build-assets
 	python manage.py migrate --noinput
 	pytest
 	python -m playwright install chromium
