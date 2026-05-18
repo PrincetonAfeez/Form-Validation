@@ -2,9 +2,13 @@
   "name": "form-validation-lab",
   "private": true,
   "scripts": {
-    "build:css": "tailwindcss -i ./static/src/forms_lab.input.css -o ./static/css/forms_lab.css --minify"
+    "build:css": "tailwindcss -i ./static/src/forms_lab.input.css -o ./static/css/forms_lab.css --minify",
+    "build:vendor": "node scripts/copy-vendor-js.mjs",
+    "build": "npm run build:css && npm run build:vendor"
   },
   "devDependencies": {
+    "alpinejs": "3.14.9",
+    "htmx.org": "1.9.12",
     "tailwindcss": "^3.4.17"
   }
 }
