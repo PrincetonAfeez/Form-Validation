@@ -8,6 +8,7 @@ from django import forms
 
 from apps.forms_lab.mixins import HTMXFormMixin, TailwindFormMixin
 from apps.forms_lab.validators.files import (
+    sniff_mime,
     validate_file_size,
     validate_image_dimensions,
     validate_magic_bytes,
@@ -31,7 +32,7 @@ class MultipleFileField(forms.FileField):
 class FileUploadForm(HTMXFormMixin, TailwindFormMixin, forms.Form):
     validator_names = ["file.size", "file.magic_bytes", "file.image_dimensions"]
     demonstrates = [
-        "Extension allowlist plus magic-byte sniffing",
+        "MIME allowlist plus magic-byte sniffing",
         "5 MB max per file",
         "Image dimension checks only for image uploads",
         "Multiple-file handling",
@@ -77,6 +78,6 @@ class FileUploadForm(HTMXFormMixin, TailwindFormMixin, forms.Form):
         for file in files:
             validate_file_size(file)
             validate_magic_bytes(file, {"application/pdf", "image/png", "image/jpeg"})
-            if (file.content_type or "").startswith("image/"):
+            if sniff_mime(file).startswith("image/"):
                 validate_image_dimensions(file)
         return files

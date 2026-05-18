@@ -238,6 +238,41 @@ def test_file_upload_validates_image_in_supporting_docs():
     assert form.is_valid(), form.errors
 
 
+def test_supporting_docs_uses_sniffed_mime_for_image_dimensions_not_content_type():
+    """PNG magic bytes with a non-image content_type must still run dimension checks."""
+    small_io = BytesIO()
+    Image.new("RGB", (10, 10), "white").save(small_io, format="PNG")
+    small_png = SimpleUploadedFile(
+        "doc.png",
+        small_io.getvalue(),
+        content_type="application/octet-stream",
+    )
+    large_io = BytesIO()
+    Image.new("RGB", (1300, 10), "white").save(large_io, format="PNG")
+    large_png = SimpleUploadedFile(
+        "wide.png",
+        large_io.getvalue(),
+        content_type="application/octet-stream",
+    )
+    resume = SimpleUploadedFile(
+        "resume.pdf",
+        b"%PDF-1.4\nbody",
+        content_type="application/pdf",
+    )
+    ok_form = FileUploadForm(
+        data={},
+        files={"resume": resume, "supporting_docs": [small_png]},
+    )
+    assert ok_form.is_valid(), ok_form.errors
+
+    bad_form = FileUploadForm(
+        data={},
+        files={"resume": resume, "supporting_docs": [large_png]},
+    )
+    assert not bad_form.is_valid()
+    assert "supporting_docs" in bad_form.errors
+
+
 def test_wizard_step_three_requires_confirm():
     form = WizardStepThreeForm({})
     assert not form.is_valid()
