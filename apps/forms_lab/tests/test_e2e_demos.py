@@ -1,3 +1,5 @@
+""" E2E tests for the form validation showcase. """
+
 from __future__ import annotations
 
 import pytest
