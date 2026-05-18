@@ -1,3 +1,5 @@
+""" Test fields and forms. """
+
 from __future__ import annotations
 
 from datetime import date
@@ -162,6 +164,32 @@ def test_formset_detects_duplicate_addresses():
     )
     assert not formset.is_valid()
     assert "Duplicate" in str(formset.non_form_errors())
+
+
+def test_formset_blank_rows_do_not_trigger_duplicate_error():
+    formset = PreviousAddressFormSet(
+        {
+            "addresses-TOTAL_FORMS": "2",
+            "addresses-INITIAL_FORMS": "0",
+            "addresses-MIN_NUM_FORMS": "1",
+            "addresses-MAX_NUM_FORMS": "5",
+            "addresses-0-country": "US",
+            "addresses-0-state_province": "CA",
+            "addresses-0-street": "",
+            "addresses-0-city": "",
+            "addresses-0-postal_code": "",
+            "addresses-1-country": "US",
+            "addresses-1-state_province": "CA",
+            "addresses-1-street": "",
+            "addresses-1-city": "",
+            "addresses-1-postal_code": "",
+        },
+        prefix="addresses",
+    )
+    assert not formset.is_valid()
+    assert "Duplicate" not in str(formset.non_form_errors())
+    assert formset.forms[0].errors
+    assert formset.forms[1].errors
 
 
 def test_formset_normalizes_canadian_postal_code():
