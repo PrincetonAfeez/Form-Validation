@@ -1,3 +1,5 @@
+""" Middleware for the forms lab app. """
+
 class SimpleHtmxDetails:
     def __init__(self, request):
         self.request = request
