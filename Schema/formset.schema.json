@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/formset.schema.json",
+  "title": "Previous Address Formset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["addresses"],
+  "properties": {
+    "addresses": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "$ref": "address.schema.json"
+      },
+      "description": "Rows should be unique by street, city, and postal code after server normalization."
+    }
+  }
+}

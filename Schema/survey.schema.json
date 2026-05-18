@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/survey.schema.json",
+  "title": "Survey Form",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["satisfaction", "interests", "availability_date", "availability_time", "favorite_color", "rating", "has_passport"],
+  "properties": {
+    "satisfaction": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "interests": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["forms", "testing", "accessibility", "other"]
+      },
+      "uniqueItems": true
+    },
+    "other_interest": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "availability_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "availability_time": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "favorite_color": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "rating": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "has_passport": {
+      "type": "boolean"
+    },
+    "passport_number": {
+      "type": "string",
+      "maxLength": 20
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "has_passport": { "const": true }
+        },
+        "required": ["has_passport"]
+      },
+      "then": {
+        "required": ["passport_number"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "interests": {
+            "contains": { "const": "other" }
+          }
+        },
+        "required": ["interests"]
+      },
+      "then": {
+        "required": ["other_interest"]
+      }
+    }
+  ]
+}

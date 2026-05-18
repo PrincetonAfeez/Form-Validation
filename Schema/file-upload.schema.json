@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/file-upload.schema.json",
+  "title": "File Upload Form",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["resume"],
+  "properties": {
+    "avatar": {
+      "$ref": "#/$defs/fileMetadata",
+      "description": "Optional PNG or JPEG avatar."
+    },
+    "resume": {
+      "$ref": "#/$defs/fileMetadata",
+      "description": "Required PDF resume."
+    },
+    "supporting_docs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fileMetadata"
+      },
+      "description": "Optional PDF, PNG, or JPEG supporting documents."
+    }
+  },
+  "$defs": {
+    "fileMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "size", "mime_type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5242880
+        },
+        "mime_type": {
+          "type": "string",
+          "enum": ["application/pdf", "image/png", "image/jpeg"]
+        }
+      }
+    }
+  }
+}

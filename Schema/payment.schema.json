@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/payment.schema.json",
+  "title": "Payment Form",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["card_number", "expiry_month", "expiry_year", "cvv", "name_on_card"],
+  "properties": {
+    "card_number": {
+      "type": "string",
+      "minLength": 12,
+      "maxLength": 24,
+      "pattern": "^[0-9 -]+$"
+    },
+    "expiry_month": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 12
+    },
+    "expiry_year": {
+      "type": "integer",
+      "minimum": 2026,
+      "maximum": 2040
+    },
+    "cvv": {
+      "type": "string",
+      "pattern": "^[0-9]{3,4}$"
+    },
+    "name_on_card": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    }
+  }
+}

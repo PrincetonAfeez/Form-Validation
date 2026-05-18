@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/wizard-step-3.schema.json",
+  "title": "Wizard Step 3 - Confirmation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["confirm"],
+  "properties": {
+    "confirm": {
+      "type": "boolean",
+      "const": true
+    }
+  }
+}

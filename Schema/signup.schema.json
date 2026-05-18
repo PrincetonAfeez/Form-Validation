@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/signup.schema.json",
+  "title": "Signup Form",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["username", "email", "password", "confirm_password", "phone", "accept_terms", "started_at"],
+  "properties": {
+    "username": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 30,
+      "pattern": "^[A-Za-z0-9_]+$"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "maxLength": 254
+    },
+    "password": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "confirm_password": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number accepted by the app and normalized to E.164."
+    },
+    "accept_terms": {
+      "type": "boolean",
+      "const": true
+    },
+    "website": {
+      "type": "string",
+      "maxLength": 0,
+      "description": "Honeypot field; should remain empty."
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp used by the time-trap validator."
+    }
+  }
+}

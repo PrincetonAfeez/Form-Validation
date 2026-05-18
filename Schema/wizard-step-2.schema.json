@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/wizard-step-2.schema.json",
+  "title": "Wizard Step 2 - Preferences",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["preferred_contact", "topics"],
+  "properties": {
+    "preferred_contact": {
+      "type": "string",
+      "enum": ["email", "phone", "sms"]
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 500
+    }
+  }
+}

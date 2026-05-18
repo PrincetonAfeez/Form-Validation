@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/index.schema.json",
+  "title": "Form Validation Schema Index",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "signup": { "$ref": "signup.schema.json" },
+    "address": { "$ref": "address.schema.json" },
+    "payment": { "$ref": "payment.schema.json" },
+    "file_upload": { "$ref": "file-upload.schema.json" },
+    "formset": { "$ref": "formset.schema.json" },
+    "survey": { "$ref": "survey.schema.json" },
+    "wizard_step_1": { "$ref": "wizard-step-1.schema.json" },
+    "wizard_step_2": { "$ref": "wizard-step-2.schema.json" },
+    "wizard_step_3": { "$ref": "wizard-step-3.schema.json" },
+    "validation_log": { "$ref": "validation-log.schema.json" }
+  }
+}
