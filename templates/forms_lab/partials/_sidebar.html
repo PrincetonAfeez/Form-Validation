@@ -1,0 +1,20 @@
+<aside class="hidden w-72 shrink-0 border-r border-slate-200 bg-white px-4 py-5 dark:border-slate-800 dark:bg-slate-900 lg:block">
+  <div class="mb-5">
+    <div class="text-xs font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">Forms Lab</div>
+    <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">A Django validation reference with HTMX partials.</p>
+  </div>
+  <nav class="space-y-1">
+    {% for demo in demo_navigation %}
+      <a href="{% url 'forms_lab:form_detail' demo.slug %}"
+         hx-get="{% url 'forms_lab:form_detail' demo.slug %}"
+         hx-target="#lab-content"
+         hx-select="#lab-content"
+         hx-swap="outerHTML"
+         hx-push-url="true"
+         hx-indicator="#htmx-spinner"
+         class="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+        {{ demo.title }}
+      </a>
+    {% endfor %}
+  </nav>
+</aside>

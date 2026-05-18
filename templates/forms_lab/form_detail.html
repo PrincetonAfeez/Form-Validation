@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% load form_extras %}
+
+{% block title %}{{ demo.title }}{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-7xl px-5 py-6">
+  <div class="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">{{ demo.kind }}</p>
+      <h1 class="mt-1 text-2xl font-semibold text-slate-950 dark:text-white">{{ demo.title }}</h1>
+    </div>
+    <a href="{% url 'forms_lab:reference' %}" class="text-sm font-medium text-teal-700 hover:text-teal-800 dark:text-teal-300">Validator reference</a>
+  </div>
+
+  <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      {% if demo.kind == "wizard" %}
+        <div id="wizard-shell">
+          {% include "forms_lab/partials/_wizard_step.html" with form=artifact %}
+        </div>
+      {% elif demo.kind == "formset" %}
+        <form id="formset-form" method="post" class="space-y-4" action="{% url 'forms_lab:form_detail' demo.slug %}">
+          {% csrf_token %}
+          {{ formset.management_form }}
+          {% include "forms_lab/partials/_form_errors.html" with form=formset %}
+          <div id="formset-rows" class="space-y-4">
+            {% for row_form in formset.forms %}
+              {% include "forms_lab/partials/_formset_row.html" with form=row_form index=forloop.counter0 %}
+            {% endfor %}
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button"
+                    id="formset-add-row"
+                    hx-post="{% url 'forms_lab:formset_add_row' %}"
+                    hx-include="#formset-form"
+                    hx-target="#formset-rows"
+                    hx-swap="beforeend"
+                    {% if formset.forms|length >= formset.max_num %}disabled{% endif %}
+                    class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+              Add row
+            </button>
+            <button type="submit" class="rounded-md bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800">Validate formset</button>
+          </div>
+        </form>
+        <script>
+          (function () {
+            function formsetLimits() {
+              const minEl = document.getElementById("id_addresses-MIN_NUM_FORMS");
+              const maxEl = document.getElementById("id_addresses-MAX_NUM_FORMS");
+              return {
+                min: minEl ? parseInt(minEl.value, 10) : 1,
+                max: maxEl ? parseInt(maxEl.value, 10) : 5,
+              };
+            }
+
+            function reindexFormset() {
+              const container = document.getElementById("formset-rows");
+              if (!container) return;
+              const rows = container.querySelectorAll(":scope > .formset-row");
+              rows.forEach(function (row, i) {
+                row.id = "formset-row-" + i;
+                const label = row.querySelector("[data-row-label]");
+                if (label) label.textContent = "Previous address " + (i + 1);
+                row.querySelectorAll("[name], [id], [for], [aria-describedby]").forEach(
+                  function (el) {
+                    ["name", "id", "for", "aria-describedby"].forEach(function (attr) {
+                      const value = el.getAttribute(attr);
+                      if (value && value.indexOf("addresses-") !== -1) {
+                        el.setAttribute(
+                          attr,
+                          value.replace(/addresses-\d+-/g, "addresses-" + i + "-")
+                        );
+                      }
+                    });
+                  }
+                );
+              });
+              const total = document.getElementById("id_addresses-TOTAL_FORMS");
+              if (total) total.value = String(rows.length);
+              updateFormsetControls();
+            }
+
+            function updateFormsetControls() {
+              const container = document.getElementById("formset-rows");
+              if (!container) return;
+              const limits = formsetLimits();
+              const rows = container.querySelectorAll(":scope > .formset-row");
+              const addBtn = document.getElementById("formset-add-row");
+              if (addBtn) addBtn.disabled = rows.length >= limits.max;
+              const atMin = rows.length <= limits.min;
+              rows.forEach(function (row) {
+                const remove = row.querySelector("[data-formset-remove]");
+                if (remove) remove.disabled = atMin;
+              });
+            }
+
+            document.body.addEventListener("click", function (event) {
+              const removeBtn = event.target.closest("[data-formset-remove]");
+              if (!removeBtn || removeBtn.disabled) return;
+              const row = removeBtn.closest(".formset-row");
+              const container = document.getElementById("formset-rows");
+              if (!row || !container) return;
+              const limits = formsetLimits();
+              const rows = container.querySelectorAll(":scope > .formset-row");
+              if (rows.length <= limits.min) return;
+              row.remove();
+              reindexFormset();
+            });
+
+            document.body.addEventListener("htmx:afterSwap", function (event) {
+              if (event.detail.target && event.detail.target.id === "formset-rows") {
+                reindexFormset();
+              }
+            });
+
+            updateFormsetControls();
+          })();
+        </script>
+      {% else %}
+        <form method="post"
+              enctype="multipart/form-data"
+              action="{% url 'forms_lab:form_detail' demo.slug %}"
+              class="space-y-5"
+              x-data="{ password: '', strength: 0, scorePassword() { const p = this.password; this.strength = Math.min(4, (p.length >= 12) + /[A-Z]/.test(p) + /[0-9]/.test(p) + /[^A-Za-z0-9]/.test(p)); } }">
+          {% csrf_token %}
+          {% include "forms_lab/partials/_form_errors.html" with form=form %}
+          {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+          {% if demo.slug == "address" %}
+            {% render_bound_field form form.country %}
+            <div id="dependent-address-fields">
+              {% include "forms_lab/partials/_country_dependent_fields.html" with form=form %}
+            </div>
+            {% render_bound_field form form.street %}
+            {% render_bound_field form form.city %}
+          {% else %}
+            {% for field in form.visible_fields %}
+              {% render_bound_field form field %}
+              {% if demo.slug == "signup" and field.name == "password" %}
+                {% include "forms_lab/partials/_password_strength.html" %}
+              {% endif %}
+              {% if demo.slug == "payment" and field.name == "card_number" %}
+                <div id="payment-brand-panel">
+                  {% include "forms_lab/partials/_payment_brand.html" with brand="unknown" cvv_length=3 %}
+                </div>
+              {% endif %}
+              {% if demo.slug == "file-upload" and field.name == "resume" %}
+                <div id="file-scan-result" class="mt-2">
+                  <progress id="upload-progress"
+                            class="hidden h-2 w-full overflow-hidden rounded-full accent-teal-600"
+                            value="0"
+                            max="100"
+                            aria-label="Upload progress"></progress>
+                </div>
+              {% endif %}
+              {% if demo.slug == "survey" and field.name == "has_passport" %}
+                <div id="passport-field">
+                  {% include "forms_lab/partials/_passport_field.html" with form=form show=form.has_passport.value %}
+                </div>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          <button type="submit" class="rounded-md bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800">Validate</button>
+        </form>
+      {% endif %}
+    </div>
+
+    <aside class="space-y-5">
+      <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300">What this demonstrates</h2>
+        <ul class="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+          {% for point in demo.demonstrates %}
+            <li>{{ point }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% include "forms_lab/partials/_rules_panel.html" %}
+      {% include "forms_lab/partials/_result_panel.html" %}
+    </aside>
+  </div>
+</section>
+{% endblock %}

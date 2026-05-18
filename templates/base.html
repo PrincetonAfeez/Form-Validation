@@ -1,0 +1,52 @@
+{% load static %}
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Forms Lab{% endblock %}</title>
+  <script>
+    if (document.cookie.includes("theme=dark")) {
+      document.documentElement.classList.add("dark");
+    }
+  </script>
+  <link rel="stylesheet" href="{% static 'css/forms_lab.css' %}">
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script defer src="{% static 'js/forms_lab.js' %}"></script>
+</head>
+<body class="min-h-full bg-slate-50 text-slate-950 antialiased dark:bg-slate-950 dark:text-slate-100">
+  <script>
+    document.body.addEventListener("htmx:configRequest", function (event) {
+      event.detail.headers["X-CSRFToken"] = "{{ csrf_token }}";
+    });
+    function toggleTheme() {
+      document.documentElement.classList.toggle("dark");
+      const dark = document.documentElement.classList.contains("dark");
+      document.cookie = "theme=" + (dark ? "dark" : "light") + ";path=/;max-age=31536000";
+    }
+  </script>
+  <div id="htmx-spinner" class="htmx-indicator fixed right-4 top-20 z-50 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300" role="status" aria-live="polite">
+    Checking…
+  </div>
+  <div class="flex min-h-screen">
+    {% include "forms_lab/partials/_sidebar.html" %}
+    <main class="min-w-0 flex-1">
+      <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/90 px-5 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
+        <div class="mx-auto flex max-w-7xl items-center justify-between gap-3">
+          <a href="{% url 'forms_lab:index' %}" class="text-sm font-semibold text-slate-700 dark:text-slate-200">Form Validation App</a>
+          <nav class="flex items-center gap-2 text-sm">
+            <a class="rounded-md px-3 py-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" href="{% url 'forms_lab:reference' %}">Reference</a>
+            <a class="rounded-md px-3 py-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" href="{% url 'forms_lab:stats' %}">Stats</a>
+            <button type="button" onclick="toggleTheme()" class="rounded-md border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800" title="Toggle dark mode">Theme</button>
+          </nav>
+        </div>
+      </header>
+      <div id="toast-region" aria-live="polite" class="sr-only"></div>
+      <div id="lab-content">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+</body>
+</html>

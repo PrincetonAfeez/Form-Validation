@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Validation Stats{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-5xl px-5 py-8">
+  <h1 class="text-2xl font-semibold text-slate-950 dark:text-white">Most-failed validators</h1>
+  <div class="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+        <tr>
+          <th class="px-4 py-3">Form</th>
+          <th class="px-4 py-3">Field</th>
+          <th class="px-4 py-3">Code</th>
+          <th class="px-4 py-3">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in failures %}
+          <tr class="border-t border-slate-200 dark:border-slate-800">
+            <td class="px-4 py-3">{{ row.form_name }}</td>
+            <td class="px-4 py-3">{{ row.field_name|default:"__all__" }}</td>
+            <td class="px-4 py-3">{{ row.error_code }}</td>
+            <td class="px-4 py-3">{{ row.total }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="px-4 py-6 text-slate-600 dark:text-slate-400">No failed validations logged yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

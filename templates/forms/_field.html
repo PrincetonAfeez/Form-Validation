@@ -1,0 +1,47 @@
+{% if field.is_hidden %}
+  <div id="{{ wrapper_id }}" class="field-wrap" data-field-name="{{ field.name }}">
+    {{ field }}
+  </div>
+{% elif use_fieldset %}
+  <fieldset id="{{ wrapper_id }}"
+            class="field-wrap space-y-2 rounded-md border-0 p-0"
+            data-field-name="{{ field.name }}"
+            {% if message_id %}aria-describedby="{{ message_id }}"{% endif %}
+            {% if state == "invalid" %}aria-invalid="true"{% endif %}>
+    <legend class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ field.label }}</legend>
+    <div class="space-y-2 {% if state == 'invalid' %}[&_*]:border-red-500{% elif state == 'valid' %}[&_*]:border-emerald-500{% endif %}">
+      {% if field_html %}{{ field_html }}{% else %}{{ field }}{% endif %}
+    </div>
+    {% if field.help_text %}
+      <p class="text-xs text-slate-500 dark:text-slate-400">{{ field.help_text }}</p>
+    {% endif %}
+    <p id="{{ message_id }}"
+       class="field-message min-h-5 text-sm {% if state == 'invalid' %}text-red-700 dark:text-red-300{% elif state == 'valid' %}text-emerald-700 dark:text-emerald-300{% else %}text-slate-500 dark:text-slate-400{% endif %}"
+       aria-live="polite">
+      {% if message %}
+        {{ message }}
+      {% elif field.errors %}
+        {{ field.errors.0 }}
+      {% endif %}
+    </p>
+  </fieldset>
+{% else %}
+  <div id="{{ wrapper_id }}" class="field-wrap space-y-1" data-field-name="{{ field.name }}">
+    <label {% if field.id_for_label %}for="{{ field.id_for_label }}" {% endif %}class="block text-sm font-medium text-slate-800 dark:text-slate-200">{{ field.label }}</label>
+    <div class="{% if state == 'invalid' %}[&_*]:border-red-500{% elif state == 'valid' %}[&_*]:border-emerald-500{% endif %}">
+      {% if field_html %}{{ field_html }}{% else %}{{ field }}{% endif %}
+    </div>
+    {% if field.help_text %}
+      <p class="text-xs text-slate-500 dark:text-slate-400">{{ field.help_text }}</p>
+    {% endif %}
+    <p id="{{ message_id }}"
+       class="field-message min-h-5 text-sm {% if state == 'invalid' %}text-red-700 dark:text-red-300{% elif state == 'valid' %}text-emerald-700 dark:text-emerald-300{% else %}text-slate-500 dark:text-slate-400{% endif %}"
+       aria-live="polite">
+      {% if message %}
+        {{ message }}
+      {% elif field.errors %}
+        {{ field.errors.0 }}
+      {% endif %}
+    </p>
+  </div>
+{% endif %}
