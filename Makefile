@@ -21,10 +21,10 @@ test-e2e:
 	pytest -m e2e --no-cov
 
 test-ci: build-assets
-	python manage.py migrate --noinput
-	pytest
+	DJANGO_SETTINGS_MODULE=config.settings.ci python manage.py migrate --noinput
+	DJANGO_SETTINGS_MODULE=config.settings.ci pytest
 	python -m playwright install chromium
-	pytest -m e2e --no-cov
+	DJANGO_SETTINGS_MODULE=config.settings.ci pytest -m e2e --no-cov
 
 coverage:
 	coverage run -m pytest && coverage report
