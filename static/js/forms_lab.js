@@ -108,4 +108,87 @@
       }
     });
   });
+
+  function formsetLimits() {
+    const minEl = document.getElementById("id_addresses-MIN_NUM_FORMS");
+    const maxEl = document.getElementById("id_addresses-MAX_NUM_FORMS");
+    return {
+      min: minEl ? parseInt(minEl.value, 10) : 1,
+      max: maxEl ? parseInt(maxEl.value, 10) : 5,
+    };
+  }
+
+  function updateFormsetControls() {
+    const form = document.getElementById("formset-form");
+    const container = document.getElementById("formset-rows");
+    if (!form || !container) return;
+    const limits = formsetLimits();
+    const rows = container.querySelectorAll(":scope > .formset-row");
+    const addBtn = document.getElementById("formset-add-row");
+    if (addBtn) addBtn.disabled = rows.length >= limits.max;
+    const atMin = rows.length <= limits.min;
+    rows.forEach(function (row) {
+      const remove = row.querySelector("[data-formset-remove]");
+      if (remove) remove.disabled = atMin;
+    });
+  }
+
+  function reindexFormset() {
+    const container = document.getElementById("formset-rows");
+    if (!container) return;
+    const rows = container.querySelectorAll(":scope > .formset-row");
+    rows.forEach(function (row, i) {
+      row.id = "formset-row-" + i;
+      const label = row.querySelector("[data-row-label]");
+      if (label) label.textContent = "Previous address " + (i + 1);
+      row.querySelectorAll("[name], [id], [for], [aria-describedby]").forEach(function (el) {
+        ["name", "id", "for", "aria-describedby"].forEach(function (attr) {
+          const value = el.getAttribute(attr);
+          if (value && value.indexOf("addresses-") !== -1) {
+            el.setAttribute(attr, value.replace(/addresses-\d+-/g, "addresses-" + i + "-"));
+          }
+        });
+      });
+    });
+    const total = document.getElementById("id_addresses-TOTAL_FORMS");
+    if (total) total.value = String(rows.length);
+    updateFormsetControls();
+  }
+
+  function initFormsetIfPresent() {
+    if (document.getElementById("formset-form")) {
+      updateFormsetControls();
+    }
+  }
+
+  document.body.addEventListener("click", function (event) {
+    const removeBtn = event.target.closest("[data-formset-remove]");
+    if (!removeBtn || removeBtn.disabled) return;
+    const form = document.getElementById("formset-form");
+    if (!form || !form.contains(removeBtn)) return;
+    const row = removeBtn.closest(".formset-row");
+    const container = document.getElementById("formset-rows");
+    if (!row || !container) return;
+    const limits = formsetLimits();
+    const rows = container.querySelectorAll(":scope > .formset-row");
+    if (rows.length <= limits.min) return;
+    row.remove();
+    reindexFormset();
+  });
+
+  document.body.addEventListener("htmx:afterSwap", function (event) {
+    const target = event.detail && event.detail.target;
+    if (!target) return;
+    if (target.id === "formset-rows") {
+      reindexFormset();
+    } else if (target.id === "lab-content" && document.getElementById("formset-form")) {
+      updateFormsetControls();
+    }
+  });
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initFormsetIfPresent);
+  } else {
+    initFormsetIfPresent();
+  }
 })();
