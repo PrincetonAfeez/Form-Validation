@@ -1,3 +1,5 @@
+""" Address form demo with country-dependent state and postal validation. """
+
 from __future__ import annotations
 
 from django import forms
