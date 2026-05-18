@@ -1,3 +1,5 @@
+""" Antispam validation. """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -25,8 +27,11 @@ def validate_time_trap(payload, min_seconds: int = 3) -> None:
         )
     try:
         started = datetime.fromisoformat(started_at)
-    except ValueError:
-        return
+    except ValueError as exc:
+        raise ValidationError(
+            "Invalid submission timing.",
+            code="invalid_trap",
+        ) from exc
     if started.tzinfo is None:
         started = started.replace(tzinfo=timezone.utc)
     if (datetime.now(timezone.utc) - started).total_seconds() < min_seconds:
