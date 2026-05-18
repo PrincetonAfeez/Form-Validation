@@ -8,7 +8,8 @@ step navigation), and focused tests (unit + Playwright E2E in CI).
 
 - Python 3.12 target, Django 5, SQLite for development
 - PostgreSQL 16-ready settings through `DATABASE_URL`
-- HTMX, optional `django-htmx`, compiled Tailwind CSS (`static/css/forms_lab.css`), Alpine.js
+- HTMX and Alpine.js **self-hosted** from `static/js/vendor/` (pinned via npm, not CDN)
+- Optional `django-htmx`; compiled Tailwind CSS (`static/css/forms_lab.css`)
 - `phonenumbers`, `python-magic`, Pillow; **WhiteNoise** for production static files
 - Test/lint tools in `requirements-dev.txt` (pytest, pytest-cov, ruff, black, hypothesis, Playwright)
 - Tooling config in `pyproject.toml` (pytest, coverage, ruff, black)
@@ -19,7 +20,7 @@ easy to run in constrained demo environments.
 ```bash
 pip install -r requirements.txt          # runtime
 pip install -r requirements-dev.txt      # tests, lint, e2e
-npm install && npm run build:css         # after Tailwind classes change in templates, apps/**/*.py, or static/js
+npm install && npm run build             # CSS + vendor JS (see package.json for pinned htmx/alpine)
 ```
 
 ## Run
@@ -111,9 +112,9 @@ flowchart LR
 - Address: country-dependent state and postal validation
 - Payment: Luhn, brand detection, CVV and expiry cross-field rules
 - Wizard: session-backed three steps; Next/Finish and **Back** swap `#wizard-shell` via HTMX; final revalidation of all steps
-- File upload: magic bytes, file size, image dimensions, multiple files
-- Dynamic formset: HTMX **add-row**; **client-side remove** with prefix reindex (min 1 / max 5 rows); duplicate-address check on submit
-- Survey: mixed widgets, `<fieldset>`/`<legend>` for radio/checkbox groups, conditional passport field
+- File upload: magic bytes, size/dimension checks; HTMX **per-field scan** (`_field=avatar|resume|supporting_docs`)
+- Dynamic formset: HTMX **add-row**; **client-side remove** with prefix reindex (min 1 / max 5 rows); duplicate check only on complete, valid rows
+- Survey: mixed widgets, `<fieldset>`/`<legend>` for radio/checkbox groups; `passport_number` only inside `#passport-field`
 
 ## Design Notes
 
@@ -128,11 +129,11 @@ typical production choices:
 
 | Demo | What the lab does | Typical production replacement |
 |------|-------------------|------------------------------|
-| **Signup** | Regex username, static reserved-name blocklist (not live availability), domain *shape* check (not DNS), honeypot + time-trap (`started_at` required on full submit) | Auth provider (e.g. Django auth / OAuth); real username availability API; email verification via SendGrid/Postmark + double opt-in; DNS MX lookup or vendor API (Kickbox, ZeroBounce); [hCaptcha](https://www.hcaptcha.com/) / reCAPTCHA / Turnstile; rate limiting (Redis, CDN/WAF) |
+| **Signup** | Regex username, static reserved-name blocklist (not live availability), domain *shape* check (not DNS), honeypot + time-trap (`started_at` required; malformed timestamp rejected) | Auth provider (e.g. Django auth / OAuth); real username availability API; email verification via SendGrid/Postmark + double opt-in; DNS MX lookup or vendor API (Kickbox, ZeroBounce); [hCaptcha](https://www.hcaptcha.com/) / reCAPTCHA / Turnstile; rate limiting (Redis, CDN/WAF) |
 | **Address** | Country-specific regex postal codes | [Google Places](https://developers.google.com/maps/documentation/places/web-service), [Loqate](https://www.loqate.com/), [Smarty](https://www.smarty.com/) for verified addresses |
-| **Payment** | Luhn + brand heuristics; masked last4 in memory only | [Stripe Elements](https://stripe.com/payments/elements), Braintree, Adyen — card data never touches your server (PCI SAQ A) |
+| **Payment** | Brand detected before Luhn; CVV rules skipped when card number invalid; masked last4 in memory only | [Stripe Elements](https://stripe.com/payments/elements), Braintree, Adyen — card data never touches your server (PCI SAQ A) |
 | **Wizard** | Session JSON for step data; HTMX partial navigation (not hardened step tokens) | Signed/encrypted session, or persisted draft (`WizardSession` model) with CSRF and step tokens |
-| **File upload** | Magic-byte sniff (with fallbacks), size/dimension caps | ClamAV/async malware scan; S3/GCS with pre-signed uploads; separate image pipeline (Imgproxy, Cloudinary) |
+| **File upload** | Per-field HTMX scan (not whole-form); magic-byte sniff (with fallbacks), size/dimension caps | ClamAV/async malware scan; S3/GCS with pre-signed uploads; separate image pipeline (Imgproxy, Cloudinary) |
 | **Formset** | In-memory duplicate check; client reindex on row remove (no server delete endpoint) | DB uniqueness constraints, or address normalization service before compare |
 | **Survey** | Conditional `clean()` for passport / “other” interest | Same server-side rules, plus client hints; store PII under retention policy if required |
 
@@ -165,7 +166,7 @@ python -m playwright install chromium   # once per machine
 make test-e2e      # or: pytest -m e2e --no-cov
 ```
 
-**Full CI parity locally** (migrate, unit, E2E; requires Node for CSS):
+**Full CI parity locally** (migrate, unit, E2E; requires Node for `npm run build`):
 
 ```bash
 make test-ci
@@ -173,7 +174,7 @@ make test-ci
 
 On Windows without `make`, run the same commands from the Makefile targets.
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on Postgres: `npm ci` + `build:css`,
+GitHub Actions (`.github/workflows/ci.yml`) on Postgres: `npm ci` + `npm run build`,
 `ruff`, unit `pytest`, then `playwright install --with-deps chromium` + `pytest -m e2e --no-cov`.
 
 ### HTMX & UI (implemented)
@@ -181,6 +182,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on Postgres: `npm ci` + `build:
 - **Toasts:** `HX-Trigger` JSON events (`fieldValidated`, `cardBrandDetected`) handled in `static/js/forms_lab.js`
 - **Spinners:** `#htmx-spinner` via `hx-indicator` on sidebar nav and blur checks
 - **Deep links:** sidebar uses `hx-push-url` + `hx-select="#lab-content"`
+- **File scan:** each file input POSTs `_field` to `/forms/file-upload/scan/` — validates that field only (optional files before resume do not fail whole form)
 - **Upload progress:** `<progress id="upload-progress">` driven by `htmx:xhr:progress`
 - **Payment CVV:** brand detect sets `maxLength` on `#id_cvv` via `cardBrandDetected` event
 - **Wizard:** Next/Finish POST into `#wizard-shell`; **Back** uses `hx-get` + `hx-select="#wizard-shell"` (session answers preserved, no full-page reload)
@@ -188,9 +190,15 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on Postgres: `npm ci` + `build:
 - **Accessibility:** radio/checkbox groups use `<fieldset>` / `<legend>` via `_field.html`; `aria-describedby` and `aria-invalid` sit on the **fieldset** for groups and on the **input** (through `field_html`) for single controls — not a blanket “on inputs” rule; **Esc** clears visible inline error text (demo UX)
 - **Signup blur:** wired to `/forms/signup/check-username/` and `check-email/` (reserved-name / email rules demo — not a live availability API)
 
-### Styling
+### Front-end assets (in-repo)
 
-Tailwind is **compiled in-repo** (`npm run build:css` → `static/css/forms_lab.css`).
-`tailwind.config.js` scans `templates/`, `apps/**/*.py` (e.g. class strings in
-`mixins.py`), and `static/js/` — rebuild and commit CSS when classes change in any of
-those paths. **CI** uses Node 20 (`npm ci` + `build:css`) before tests.
+| Asset | Command | Output |
+|-------|---------|--------|
+| Tailwind | `npm run build:css` | `static/css/forms_lab.css` |
+| HTMX + Alpine | `npm run build:vendor` | `static/js/vendor/*.min.js` |
+
+Run `npm run build` for both. `tailwind.config.js` scans `templates/`, `apps/**/*.py`,
+and `static/js/`. Commit built CSS and vendor JS after changes. Scripts are served
+same-origin via `{% static %}` (no unpkg CDN; no SRI needed for first-party static files).
+
+**CI** uses Node 20 (`npm ci` + `npm run build`) before tests.
