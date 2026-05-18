@@ -1,4 +1,8 @@
+""" File upload form demo with image dimension and magic-byte validation. """
+
 from __future__ import annotations
+
+import json
 
 from django import forms
 
@@ -31,7 +35,7 @@ class FileUploadForm(HTMXFormMixin, TailwindFormMixin, forms.Form):
         "5 MB max per file",
         "Image dimension checks only for image uploads",
         "Multiple-file handling",
-        "HTMX upload progress hook",
+        "HTMX per-field scan on change (not whole-form validation)",
     ]
 
     avatar = forms.FileField(required=False)
@@ -41,7 +45,7 @@ class FileUploadForm(HTMXFormMixin, TailwindFormMixin, forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.style_fields()
-        for field in self.fields.values():
+        for name, field in self.fields.items():
             field.widget.attrs.update(
                 {
                     "hx-post": "/forms/file-upload/scan/",
@@ -50,6 +54,7 @@ class FileUploadForm(HTMXFormMixin, TailwindFormMixin, forms.Form):
                     "hx-swap": "outerHTML",
                     "hx-encoding": "multipart/form-data",
                     "hx-indicator": "#htmx-spinner",
+                    "hx-vals": json.dumps({"_field": name}),
                 }
             )
 
