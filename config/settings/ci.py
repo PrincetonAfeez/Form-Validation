@@ -1,4 +1,4 @@
-"""Settings for CI: Postgres via DATABASE_URL, debug on, non-production secret."""
+"""Settings for CI: Postgres via DATABASE_URL, debug on, non-production secret"""
 
 from django.core.exceptions import ImproperlyConfigured
 
